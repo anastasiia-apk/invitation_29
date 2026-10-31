@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Приглашение Насти · 8 ноября</title>
+<style>
+  /* Layout: a poster. The date is the headline, the robot dances in the middle, and a frosted
+     glass plate floats over its legs and the floor with the details; the robot shows through, blurred. */
+  :root {
+    --bg: #f4f4f1;
+    --ink: #111112;
+    --muted: #8d8d88;
+    --line: #dcdcd5;
+    --line-strong: #b4b4ad;
+    --accent: #e0242b;
+    --sans: "Helvetica Neue", Helvetica, "Inter", Arial, sans-serif;
+    --mono: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+    --gx: max(22px, env(safe-area-inset-left));
+    --gr: max(22px, env(safe-area-inset-right));
+    color-scheme: light;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body { background: var(--bg); color: var(--ink); font-family: var(--sans); overflow: hidden; -webkit-font-smoothing: antialiased; }
+  #stage { position: fixed; inset: 0; }
+  #stage canvas { display: block; width: 100%; height: 100%; }
+  a { color: inherit; }
+  button { font-family: inherit; }
+
+  /* ---------- headline: the date */
+  .head { position: fixed; top: max(20px, env(safe-area-inset-top)); left: var(--gx); pointer-events: none; }
+  .eyebrow { font-size: 10px; letter-spacing: 0.24em; text-transform: uppercase; color: var(--muted); }
+  .date { margin: 10px 0 0; font-weight: 700; font-size: clamp(29px, 9vw, 52px); line-height: 0.9; letter-spacing: -0.01em; white-space: nowrap; }
+  .date i { font-style: normal; color: var(--accent); }
+  .when { margin-top: 12px; font-size: 14px; letter-spacing: 0.02em; font-variant-numeric: tabular-nums; }
+  .when .tm { font-weight: 600; }
+  .tg { pointer-events: auto; color: var(--ink); text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--line-strong); text-decoration-thickness: 1px; }
+  .tg:hover { text-decoration-color: var(--ink); }
+  .tg:focus-visible { outline: 2px solid rgba(17, 17, 18, 0.25); outline-offset: 3px; border-radius: 4px; }
+
+  /* ---------- quiet controls */
+  .ctrls { position: fixed; top: max(18px, env(safe-area-inset-top)); right: var(--gr); }
+  .gbtn { position: relative; appearance: none; width: 42px; height: 42px; border-radius: 50%; cursor: pointer; display: grid; place-items: center; color: var(--ink);
+    border: 1px solid rgba(255, 255, 255, 0.75); background: rgba(255, 255, 255, 0.34);
+    -webkit-backdrop-filter: blur(14px) saturate(170%); backdrop-filter: blur(14px) saturate(170%);
+    box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.08), 0 8px 20px -10px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.9), inset 0 -1px 0 rgba(255, 255, 255, 0.3);
+    transition: transform .15s, background .15s; }
+  .gbtn::after { content: ""; position: absolute; inset: 1px; border-radius: 50%; pointer-events: none;
+    background: radial-gradient(120% 80% at 30% 0%, rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0) 55%); }
+  .gbtn:hover { transform: scale(1.06); background: rgba(255, 255, 255, 0.5); }
+  .gbtn svg { position: relative; z-index: 1; width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+  .gbtn[hidden], .gate[hidden] { display: none; }
+  /* start: only the robot (powered off) and two buttons; the rest of the UI slides in after the choice */
+  .gate { position: fixed; left: var(--sx, 50%); top: 86%; transform: translate(-50%, -50%); z-index: 20; display: flex; flex-direction: column; align-items: center; gap: 18px; transition: opacity .45s ease; }
+  .gate.gone { opacity: 0; pointer-events: none; }
+  .gate-on { appearance: none; display: inline-flex; align-items: center; gap: 14px; height: 62px; padding: 0 30px 0 9px; border-radius: 999px; cursor: pointer; border: 0;
+    position: relative; color: var(--ink); font-size: 11.5px; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; white-space: nowrap;
+    border: 1px solid rgba(255, 255, 255, 0.85); background: rgba(255, 255, 255, 0.4);
+    -webkit-backdrop-filter: blur(18px) saturate(180%); backdrop-filter: blur(18px) saturate(180%);
+    animation: callout 1.8s ease-out infinite; }
+  .gate-on::after { content: ""; position: absolute; inset: 1px; border-radius: inherit; pointer-events: none;
+    background: linear-gradient(170deg, rgba(255, 255, 255, 0.75) 0%, rgba(255, 255, 255, 0.1) 45%, rgba(255, 255, 255, 0) 60%, rgba(255, 255, 255, 0.25) 100%); }
+  .gate-on > * { position: relative; z-index: 1; }
+  .gate-on .pi { width: 44px; height: 44px; border-radius: 50%; background: var(--accent); color: #fff; display: grid; place-items: center; box-shadow: 0 4px 12px -4px rgba(224, 36, 43, 0.6); }
+  .gate-on svg { width: 14px; height: 14px; fill: currentColor; margin-left: 2px; }
+  .gate-on:hover { transform: scale(1.04); background: rgba(255, 255, 255, 0.55); }
+  @keyframes callout { 0% { box-shadow: 0 0 0 0 rgba(224, 36, 43, 0.4), 0 18px 40px -16px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.95); }
+                       70%, 100% { box-shadow: 0 0 0 18px rgba(224, 36, 43, 0), 0 18px 40px -16px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.95); } }
+  .gate-off { appearance: none; border: 0; background: none; cursor: pointer; padding: 6px;
+    color: var(--muted); font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; text-decoration: underline; text-underline-offset: 4px; text-decoration-color: var(--line-strong); }
+  .gate-off:hover { color: var(--ink); }
+  .gate-on:focus-visible, .gate-off:focus-visible { outline: 2px solid rgba(17, 17, 18, 0.3); outline-offset: 4px; }
+  body.pre .head, body.pre .ctrls, body.pre .dock { opacity: 0; visibility: hidden; }
+  body.reveal .head { animation: slideL .9s cubic-bezier(.2, .8, .2, 1) both; }
+  body.reveal .ctrls { animation: slideD .9s .12s cubic-bezier(.2, .8, .2, 1) both; }
+  body.reveal .panel, body.reveal .transport { animation: slideU 1s .2s cubic-bezier(.2, .8, .2, 1) both; }
+  @keyframes slideL { from { opacity: 0; transform: translateX(-40px); } to { opacity: 1; transform: none; } }
+  @keyframes slideD { from { opacity: 0; transform: translateY(-30px); } to { opacity: 1; transform: none; } }
+  @keyframes slideU { from { opacity: 0; transform: translateY(60px); } to { opacity: 1; transform: none; } }
+  .gbtn .i-off { display: none; }
+  .gbtn.off .i-on, .gbtn.need .i-on { display: none; }
+  .gbtn.off .i-off, .gbtn.need .i-off { display: block; }
+  .gbtn.off { color: var(--muted); }
+  .gbtn .badge { position: absolute; top: 3px; right: 3px; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); display: none; z-index: 2; }
+  .gbtn.need .badge { display: block; animation: blink 1.1s ease-in-out infinite; }
+  .gbtn.need { animation: ring 1.8s ease-out infinite; }
+  @keyframes blink { 50% { opacity: 0.25; } }
+  @keyframes ring { 0% { box-shadow: 0 0 0 0 rgba(224, 36, 43, 0.35), 0 8px 20px -10px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.9); }
+                    100% { box-shadow: 0 0 0 12px rgba(224, 36, 43, 0), 0 8px 20px -10px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.9); } }
+  .gbtn:focus-visible, .content a:focus-visible { outline: 2px solid rgba(17, 17, 18, 0.25); outline-offset: 3px; }
+  .tab:focus { outline: none; }
+  .tab:focus-visible { color: var(--ink); text-decoration: underline; text-underline-offset: 4px; text-decoration-color: var(--line-strong); }
+
+  /* ---------- frosted glass plate */
+  /* phone: a dock at the bottom = transport (pause + track ticks) above the glass plate */
+  .dock { position: fixed; left: max(12px, env(safe-area-inset-left)); right: max(12px, env(safe-area-inset-right)); bottom: max(12px, env(safe-area-inset-bottom));
+    display: flex; flex-direction: column; gap: 12px; }
+  .transport { display: grid; grid-template-columns: 46px minmax(0, 1fr); gap: 16px; align-items: center; padding: 0 10px 0 6px; }
+  .tbtn { width: 46px; height: 46px; border-radius: 50%; border: 0; background: var(--ink); color: #fff; cursor: pointer; display: grid; place-items: center; }
+  .tbtn:focus-visible, .tl:focus-visible { outline: 2px solid rgba(17, 17, 18, 0.25); outline-offset: 3px; }
+  .tbtn svg { width: 15px; height: 15px; fill: currentColor; }
+  .tbtn .i-play { display: none; margin-left: 2px; }
+  .tbtn.paused .i-play { display: block; }
+  .tbtn.paused .i-pause { display: none; }
+  .tl { position: relative; height: 30px; cursor: pointer; touch-action: none; }
+  .tl .rail { position: absolute; left: 0; right: 0; top: 14px; height: 1px; background: var(--line-strong); }
+  .tl .fill { position: absolute; left: 0; top: 13px; height: 3px; background: var(--ink); width: 0; }
+  .tl .tick { position: absolute; top: 7px; width: 1px; height: 16px; background: var(--line-strong); }
+  .tl .playhead { position: absolute; top: 9px; width: 12px; height: 12px; margin-left: -6px; border-radius: 50%; background: var(--accent); }
+  .panel { position: relative;
+    padding: 4px 20px 14px; border-radius: 28px; isolation: isolate; overflow: hidden;
+    --ink: #111112; --muted: rgba(17, 17, 18, 0.56); --line: rgba(17, 17, 18, 0.1); --line-strong: rgba(17, 17, 18, 0.22);
+    color: var(--ink); background: rgba(250, 250, 247, 0.24);
+    -webkit-backdrop-filter: blur(16px) saturate(180%); backdrop-filter: blur(16px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    box-shadow: 0 30px 70px -30px rgba(20, 20, 30, 0.38), 0 0 0 0.5px rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.85), inset 0 -1px 0 rgba(255, 255, 255, 0.25); }
+  /* matte grain + liquid sheen */
+  .panel::before, .panel::after { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; z-index: -1; }
+  .panel::before { opacity: 0.22; mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.5  0 0 0 0 0.5  0 0 0 0 0.5  0 0 0 0.7 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>"); }
+  .panel::after { background: linear-gradient(165deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0.08) 28%, rgba(255, 255, 255, 0) 55%, rgba(255, 255, 255, 0.12) 100%); }
+  body.smoky .panel { --ink: #ffffff; --muted: rgba(255, 255, 255, 0.62); --line: rgba(255, 255, 255, 0.13); --line-strong: rgba(255, 255, 255, 0.3);
+    background: rgba(30, 30, 33, 0.4); border-color: rgba(255, 255, 255, 0.22);
+    box-shadow: 0 30px 70px -30px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.28), inset 0 -1px 0 rgba(255, 255, 255, 0.06); }
+  body.smoky .panel::after { background: linear-gradient(165deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0) 35%, rgba(255, 255, 255, 0.05) 100%); }
+  body.smoky .maplink:hover { background: #fff; color: #111; }
+  .tabs { position: relative; display: flex; gap: 22px; border-bottom: 1px solid var(--line-strong); }
+  .tab { position: relative; appearance: none; border: 0; background: none; cursor: pointer; padding: 14px 0 11px; margin-bottom: -1px;
+    font-size: 10px; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); border-bottom: 2px solid transparent; transition: color .15s, border-color .15s; }
+  .tab:hover { color: var(--ink); }
+  .tab.on { color: var(--ink); border-bottom-color: var(--ink); }
+  .content { margin-top: 12px; height: 150px; overflow-y: auto; overscroll-behavior: contain; font-size: 14px; line-height: 1.45; padding-right: 4px;
+    scrollbar-width: thin; scrollbar-color: var(--line-strong) transparent; }
+  .content h3 { margin: 0 0 6px; font-size: 10px; font-weight: 500; letter-spacing: 0.22em; text-transform: uppercase; color: var(--muted); }
+  .content h3:not(:first-child) { margin-top: 18px; }
+  .content h4 { margin: 14px 0 4px; font-size: 10.5px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; }
+  .content p { margin: 0 0 6px; }
+  .content ul, .content ol { list-style: none; margin: 0; padding: 0; }
+
+  .sched li { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--line); }
+  .sched li:first-child { padding-top: 0; }
+  .sched li:last-child { border-bottom: 0; }
+  .sched time { font-family: var(--mono); font-size: 12px; line-height: 1.75; font-variant-numeric: tabular-nums; color: var(--muted); white-space: nowrap; }
+  .sched small { display: block; color: var(--muted); font-size: 12px; }
+  .sched .cake span::after { content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); margin-left: 8px; vertical-align: 2px; }
+
+  .place { font-size: 18px; font-weight: 600; line-height: 1.25; margin-bottom: 4px !important; }
+  .maplink { display: inline-flex; align-items: center; gap: 8px; margin-top: 10px; padding: 9px 14px; border-radius: 999px; border: 1px solid var(--ink); text-decoration: none;
+    font-size: 10px; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; }
+  .maplink:hover { background: var(--ink); color: #fff; }
+  .maplink svg { width: 14px; height: 14px; fill: none; stroke: var(--accent); stroke-width: 1.8; }
+  .maplink:hover svg { stroke: #fff; }
+
+  .wish li { display: grid; grid-template-columns: 24px minmax(0, 1fr); gap: 6px; padding: 7px 0; border-bottom: 1px solid var(--line); }
+  .wish li:first-child { padding-top: 0; }
+  .wish li:last-child { border-bottom: 0; }
+  .wish .n { font-family: var(--mono); font-size: 12px; line-height: 1.75; color: var(--accent); }
+  .wish a { text-underline-offset: 3px; text-decoration-color: var(--line-strong); }
+  .wish small { display: block; color: var(--muted); font-size: 12px; }
+
+  .menu li { padding: 5px 0; border-bottom: 1px solid var(--line); }
+  .menu li:last-child { border-bottom: 0; }
+  .dish { display: block; }
+  .alg { display: block; margin-top: 1px; font-size: 11px; color: var(--muted); }
+  .fine { margin-top: 12px !important; font-size: 11px; color: var(--muted); }
+
+  .credit { margin-left: auto; align-self: center; display: flex; align-items: center; gap: 8px; padding-top: 3px;
+    font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); pointer-events: none; white-space: nowrap; }
+  .beats { display: inline-flex; gap: 3px; }
+  .beats i { width: 5px; height: 5px; border: 1px solid var(--line-strong); }
+  .beats i.on { background: var(--ink); border-color: var(--ink); }
+  .beats i.on:first-child { background: var(--accent); border-color: var(--accent); }
+
+  @media (max-width: 560px) {
+    .eyebrow { letter-spacing: 0.12em; font-size: clamp(8.5px, 2.4vw, 9.5px); white-space: nowrap; }
+    .ctrls { top: calc(max(20px, env(safe-area-inset-top)) + 22px); } /* sits beside the date, so the top line can run full width */
+  }
+  @media (max-width: 640px) { .credit .t { display: none; } }
+  @media (max-width: 420px) {
+    .tabs { gap: 16px; }
+    .tab { letter-spacing: 0.13em; }
+  }
+  /* wide screens: date + glass column on the left, robot on the right, the track runs under the robot */
+  @media (min-width: 900px) and (min-aspect-ratio: 11/10) {
+    :root { --gx: max(44px, env(safe-area-inset-left)); --gr: max(40px, env(safe-area-inset-right)); --colw: clamp(360px, 30vw, 460px); }
+    .head { top: max(34px, env(safe-area-inset-top)); }
+    .date { font-size: clamp(46px, 5.6vw, 88px); }
+    .eyebrow { white-space: nowrap; }
+    .ctrls { top: max(34px, env(safe-area-inset-top)); }
+    .gbtn { width: 46px; height: 46px; }
+    .dock { left: var(--gx); right: auto; top: var(--dockTop, 210px); bottom: auto; width: var(--colw); }
+    .transport { position: fixed; left: calc(var(--gx) + var(--colw) + 48px); right: calc(var(--gr) + 6vw); bottom: max(28px, env(safe-area-inset-bottom)); padding: 0; grid-template-columns: 50px minmax(0, 1fr); gap: 20px; }
+    .tbtn { width: 50px; height: 50px; }
+    .panel { max-height: calc(100vh - var(--dockTop, 210px) - max(30px, env(safe-area-inset-bottom)));
+      min-height: min(300px, 36vh); padding: 8px 26px 22px; border-radius: 30px; display: flex; flex-direction: column; }
+    .content { height: auto; flex: 1 1 auto; min-height: 0; margin-top: 16px; }
+    .credit { display: none; }
+    .place { font-size: 20px; }
+  }
+  @media (prefers-reduced-motion: reduce) { .gbtn.need, .gbtn.need .badge, .gate-on, body.reveal .head, body.reveal .ctrls, body.reveal .panel, body.reveal .transport { animation: none; } .gbtn, .tab { transition: none; } }
+</style>
+</head>
+<body class="pre">
+  <div id="stage"></div>
+
+  <header class="head">
+    <div class="eyebrow">Официальное приглашение на день рождения</div>
+    <h1 class="date">8 ноября, 11:00<i>.</i></h1>
+    <div class="when">Контакт: <a class="tg" href="https://t.me/ilove_bears" target="_blank" rel="noopener">@ilove_bears</a></div>
+  </header>
+
+  <div class="gate" id="gate">
+    <button class="gate-on" id="gateOn" type="button"><span class="pi"><svg viewBox="0 0 10 10"><path d="M1.8 0.6v8.8l7.6-4.4z"/></svg></span>Открыть приглашение</button>
+  </div>
+
+  <div class="ctrls">
+    <button class="gbtn" id="btnSound" type="button" aria-label="Выключить звук" title="Звук" aria-pressed="true">
+      <svg class="i-on" viewBox="0 0 24 24"><path d="M4 9.5h3.2L11.5 6v12l-4.3-3.5H4z"/><path d="M15 9.2a4 4 0 0 1 0 5.6M17.6 6.8a7.4 7.4 0 0 1 0 10.4"/></svg>
+      <svg class="i-off" viewBox="0 0 24 24"><path d="M4 9.5h3.2L11.5 6v12l-4.3-3.5H4z"/><path d="M15.5 9.8l4.4 4.4M19.9 9.8l-4.4 4.4"/></svg>
+      <span class="badge"></span>
+    </button>
+  </div>
+
+  <div class="dock" id="dock">
+  <div class="transport" id="transport">
+    <button class="tbtn" id="btnPlay" type="button" aria-label="Пауза">
+      <svg class="i-pause" viewBox="0 0 10 10"><rect x="1.3" y="0.8" width="2.4" height="8.4"/><rect x="6.3" y="0.8" width="2.4" height="8.4"/></svg>
+      <svg class="i-play" viewBox="0 0 10 10"><path d="M1.8 0.6v8.8l7.6-4.4z"/></svg>
+    </button>
+    <div class="tl" id="tl" role="slider" aria-label="Позиция в треке" tabindex="0"><div class="rail"></div><div id="ticks"></div><div class="fill" id="fill"></div><div class="playhead" id="playhead"></div></div>
+  </div>
+  <section class="panel" aria-label="Детали праздника">
+    <div class="tabs" role="tablist">
+      <button class="tab" type="button" role="tab" data-tab="schedule" id="tab-schedule">Расписание</button>
+      <button class="tab" type="button" role="tab" data-tab="where" id="tab-where">Где</button>
+      <button class="tab" type="button" role="tab" data-tab="wish" id="tab-wish">Вишлист</button>
+      <button class="tab" type="button" role="tab" data-tab="details" id="tab-details">Детали</button>
+      <span class="credit" aria-hidden="true"><span class="t">«Небо» — Иванушки International</span><span class="beats" id="beats"><i></i><i></i><i></i><i></i></span></span>
+    </div>
+    <div class="content" id="content" tabindex="0">
+
+      <div class="pane" id="pane-schedule" role="tabpanel" aria-labelledby="tab-schedule">
+        <ol class="sched">
+          <li><time>11:00</time><span>Начало</span></li>
+          <li><time>12:00</time><span>Лекция Ирины Якутенко</span></li>
+          <li><time>13:05</time><span>Торт!</span></li>
+          <li><time>15:00</time><span>Завершение</span></li>
+        </ol>
+      </div>
+
+      <div class="pane" id="pane-where" role="tabpanel" aria-labelledby="tab-where" hidden>
+        <p class="place">Cap St Georges Hotel &amp; Resort</p>
+        <p>Ресторан Sky 7 — на седьмом этаже</p>
+        <a class="maplink" href="https://maps.app.goo.gl/cuPdGsLGSYAby4o97" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21.5s-6.5-6.2-6.5-11.3a6.5 6.5 0 0 1 13 0c0 5.1-6.5 11.3-6.5 11.3z"/><circle cx="12" cy="10" r="2.4"/></svg>Открыть в Google Maps</a>
+      </div>
+
+      <div class="pane" id="pane-wish" role="tabpanel" aria-labelledby="tab-wish" hidden>
+        <ol class="wish">
+          <li><span class="n">1/</span><span>Сертификат на уроки английского<small><a href="https://englex.ru/gift/" target="_blank" rel="noopener">englex.ru/gift ↗</a></small></span></li>
+          <li><span class="n">2/</span><span>Must-read книга<small>computer science, математика, финансы, история, классика, энциклопедии</small></span></li>
+          <li><span class="n">3/</span><span>Beauty-штучки, сертификаты, девайсы<small>Рада всему про красоту и здоровье!</small></span></li>
+          <li><span class="n">4/</span><span>Наручные часы<small>Я подготовлюсь, чтобы это не было плохой приметой :)))</small></span></li>
+          <li><span class="n">5/</span><span>Всё что угодно!</span></li>
+        </ol>
+      </div>
+
+      <div class="pane" id="pane-details" role="tabpanel" aria-labelledby="tab-details" hidden>
+        <h3>Дресс-код</h3>
+        <p>Smart casual</p>
+        <h3>Меню · фуршет</h3>
+        <h4>Холодное</h4>
+        <ul class="menu">
+          <li><span class="dish">Хрустящий рожок с муссом из феты и пчелиной пыльцой</span><span class="alg">глютен · молоко</span></li>
+          <li><span class="dish">Коктейль из креветок</span><span class="alg">ракообразные · яйца · горчица · моллюски</span></li>
+          <li><span class="dish">Абрикосовая тарталетка с пастрами</span><span class="alg">глютен · молоко · моллюски</span></li>
+          <li><span class="dish">Хвост лобстера на цветных булочках</span><span class="alg">глютен · ракообразные · яйца · горчица · моллюски</span></li>
+          <li><span class="dish">Поке-боул с тунцом</span><span class="alg">глютен · рыба · сульфиты · кунжут</span></li>
+          <li><span class="dish">Ролл с лососем домашнего копчения</span><span class="alg">глютен · рыба · молоко</span></li>
+          <li><span class="dish">Блины с козьим сыром и гелем из лесных ягод</span><span class="alg">глютен · молоко</span></li>
+        </ul>
+        <h4>Горячее</h4>
+        <ul class="menu">
+          <li><span class="dish">Бургер с говядиной в булочке бриошь с фирменным соусом</span><span class="alg">глютен · яйца · горчица · моллюски</span></li>
+          <li><span class="dish">Куриные стрипсы в хрустящей панировке</span><span class="alg">глютен · яйца · молоко</span></li>
+          <li><span class="dish">Овощные спринг-роллы со сладким соусом чили</span><span class="alg">глютен · сульфиты · кунжут</span></li>
+          <li><span class="dish">Паровые булочки бао с уткой и соусом хойсин</span><span class="alg">глютен · кунжут · моллюски</span></li>
+          <li><span class="dish">Креветки «бабочка» с майонезом на травах</span><span class="alg">глютен · ракообразные · яйца · молоко</span></li>
+          <li><span class="dish">Халлуми на гриле с кунжутом и мёдом</span><span class="alg">глютен · молоко · сульфиты</span></li>
+          <li><span class="dish">Дим-самы со свининой и соусом понзу</span><span class="alg">глютен · сульфиты · кунжут</span></li>
+          <li><span class="dish">Картофель-спиральки</span><span class="alg">аллергены не указаны</span></li>
+        </ul>
+        <h4>Десерты</h4>
+        <ul class="menu">
+          <li><span class="dish">Ассорти изысканных десертов</span><span class="alg">глютен · яйца · молоко · орехи</span></li>
+        </ul>
+        <p class="fine">Аллергены указаны по меню отеля Cap St Georges</p>
+      </div>
+
+    </div>
+  </section>
+  </div>
+
+  <audio id="audio" preload="auto" loop>
+    <source src="nebo.m4a" type="audio/mp4">
+    <source src="nebo.mp3" type="audio/mpeg" id="lastSource">
+  </audio>
+  <script src="three.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
