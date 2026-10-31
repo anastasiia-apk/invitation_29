@@ -41,9 +41,13 @@
   * { box-sizing: border-box; }
   html, body { height: 100%; margin: 0; }
   html { background: #f4f4f1; }
+  /* iOS 26 Safari never draws position:fixed content under its glass toolbars, so the 3D stage is ordinary page content
+     as tall as the large viewport: it runs under the toolbars and the browser blurs it like any page */
+  html, body { height: auto; min-height: 100vh; min-height: 100lvh; }
+  body { position: relative; }
   body { background: var(--bg); color: var(--ink); font-family: var(--sans); overflow: hidden; -webkit-font-smoothing: antialiased; }
   /* the 3D stage runs under the browser bars (large viewport), so nothing looks cut off */
-  #stage { position: fixed; top: 0; left: 0; width: 100%; height: 100vh; height: 100lvh; }
+  #stage { position: absolute; top: 0; left: 0; width: 100%; height: 100vh; height: 100lvh; }
   #stage canvas { display: block; width: 100%; height: 100%; }
   a { color: inherit; }
   button { font-family: inherit; }
