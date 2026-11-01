@@ -47,13 +47,18 @@
   body { position: relative; }
   body { background: var(--bg); color: var(--ink); font-family: var(--sans); overflow: hidden; -webkit-font-smoothing: antialiased; }
   /* the 3D stage runs under the browser bars (large viewport), so nothing looks cut off */
+  /* all UI lives in a layer exactly as tall as the visible area (between the browser bars), not position:fixed —
+     iOS 26 Safari paints a solid strip under its toolbar as soon as a fixed element sits near the bottom */
+  .ui { position: absolute; top: 0; left: 0; right: 0; height: 100vh; height: 100svh; pointer-events: none; }
+  .ui > * { pointer-events: auto; }
+  .ui > .head { pointer-events: none; }
   #stage { position: absolute; top: 0; left: 0; width: 100%; height: 100vh; height: 100lvh; }
   #stage canvas { display: block; width: 100%; height: 100%; }
   a { color: inherit; }
   button { font-family: inherit; }
 
   /* ---------- headline: the date */
-  .head { position: fixed; top: max(20px, env(safe-area-inset-top)); left: var(--gx); pointer-events: none; }
+  .head { position: absolute; top: max(20px, env(safe-area-inset-top)); left: var(--gx); pointer-events: none; }
   .eyebrow { font-size: 10px; letter-spacing: 0.24em; text-transform: uppercase; color: var(--muted); }
   .date { margin: 10px 0 0; font-weight: 700; font-size: clamp(29px, 9vw, 52px); line-height: 0.9; letter-spacing: -0.01em; white-space: nowrap; }
   .date i { font-style: normal; color: var(--accent); }
@@ -64,7 +69,7 @@
   .tg:focus-visible { outline: 2px solid rgba(17, 17, 18, 0.25); outline-offset: 3px; border-radius: 4px; }
 
   /* ---------- quiet controls */
-  .ctrls { position: fixed; top: max(18px, env(safe-area-inset-top)); right: var(--gr); }
+  .ctrls { position: absolute; top: max(18px, env(safe-area-inset-top)); right: var(--gr); }
   .gbtn { position: relative; appearance: none; width: 42px; height: 42px; border-radius: 50%; cursor: pointer; display: grid; place-items: center; color: var(--ink);
     border: 1px solid rgba(255, 255, 255, 0.75); background: rgba(255, 255, 255, 0.34);
     -webkit-backdrop-filter: blur(14px) saturate(170%); backdrop-filter: blur(14px) saturate(170%);
@@ -76,9 +81,9 @@
   .gbtn svg { position: relative; z-index: 1; width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
   .gbtn[hidden], .gate[hidden] { display: none; }
   /* start: only the robot (powered off) and two buttons; the rest of the UI slides in after the choice */
-  .gate { position: fixed; left: var(--sx, 50%); top: 86%; transform: translate(-50%, -50%); z-index: 20; display: flex; flex-direction: column; align-items: center; gap: 18px; transition: opacity .45s ease; }
+  .gate { position: absolute; left: var(--sx, 50%); top: 86%; transform: translate(-50%, -50%); z-index: 20; display: flex; flex-direction: column; align-items: center; gap: 18px; transition: opacity .45s ease; }
   .gate.gone { opacity: 0; pointer-events: none; }
-  .gate-on { appearance: none; display: inline-flex; align-items: center; gap: 14px; height: 62px; padding: 0 30px 0 9px; border-radius: 999px; cursor: pointer; border: 0;
+  .gate-on { appearance: none; display: inline-flex; align-items: center; gap: 14px; height: 62px; padding: 0 34px; border-radius: 999px; cursor: pointer; border: 0;
     position: relative; color: var(--ink); font-size: 11.5px; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; white-space: nowrap;
     border: 1px solid rgba(255, 255, 255, 0.85); background: rgba(255, 255, 255, 0.4);
     -webkit-backdrop-filter: blur(18px) saturate(180%); backdrop-filter: blur(18px) saturate(180%);
@@ -86,8 +91,8 @@
   .gate-on::after { content: ""; position: absolute; inset: 1px; border-radius: inherit; pointer-events: none;
     background: linear-gradient(170deg, rgba(255, 255, 255, 0.75) 0%, rgba(255, 255, 255, 0.1) 45%, rgba(255, 255, 255, 0) 60%, rgba(255, 255, 255, 0.25) 100%); }
   .gate-on > * { position: relative; z-index: 1; }
-  .gate-on .pi { width: 44px; height: 44px; border-radius: 50%; background: var(--accent); color: #fff; display: grid; place-items: center; box-shadow: 0 4px 12px -4px rgba(224, 36, 43, 0.6); }
-  .gate-on svg { width: 14px; height: 14px; fill: currentColor; margin-left: 2px; }
+  .gate-on .arr { color: var(--accent); font-size: 18px; letter-spacing: 0; font-weight: 500; transition: transform .2s; }
+  .gate-on:hover .arr { transform: translateX(4px); }
   .gate-on:hover { transform: scale(1.04); background: rgba(255, 255, 255, 0.55); }
   @keyframes callout { 0% { box-shadow: 0 0 0 0 rgba(224, 36, 43, 0.4), 0 18px 40px -16px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.95); }
                        70%, 100% { box-shadow: 0 0 0 18px rgba(224, 36, 43, 0), 0 18px 40px -16px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.95); } }
@@ -118,7 +123,7 @@
 
   /* ---------- frosted glass plate */
   /* phone: a dock at the bottom = transport (pause + track ticks) above the glass plate */
-  .dock { position: fixed; left: max(12px, env(safe-area-inset-left)); right: max(12px, env(safe-area-inset-right)); bottom: max(12px, env(safe-area-inset-bottom));
+  .dock { position: absolute; left: max(12px, env(safe-area-inset-left)); right: max(12px, env(safe-area-inset-right)); bottom: max(12px, env(safe-area-inset-bottom));
     display: flex; flex-direction: column; gap: 12px; }
   .transport { display: grid; grid-template-columns: 46px minmax(0, 1fr); gap: 16px; align-items: center; padding: 0 10px 0 6px; }
   .tbtn { width: 46px; height: 46px; border-radius: 50%; border: 0; background: var(--ink); color: #fff; cursor: pointer; display: grid; place-items: center; }
@@ -216,6 +221,7 @@
     .dock { left: var(--gx); right: auto; top: var(--dockTop, 210px); bottom: auto; width: var(--colw); }
     .transport { position: fixed; left: calc(var(--gx) + var(--colw) + 48px); right: calc(var(--gr) + 6vw); bottom: max(28px, env(safe-area-inset-bottom)); padding: 0; grid-template-columns: 50px minmax(0, 1fr); gap: 20px; }
     .tbtn { width: 50px; height: 50px; }
+    .gate { left: calc(var(--gx) + var(--colw) / 2); top: 52%; } /* desktop: centre of the empty left half */
     .panel { max-height: calc(100vh - var(--dockTop, 210px) - max(30px, env(safe-area-inset-bottom)));
       min-height: min(300px, 36vh); padding: 8px 26px 22px; border-radius: 30px; display: flex; flex-direction: column; }
     .content { height: auto; flex: 1 1 auto; min-height: 0; margin-top: 16px; }
@@ -227,6 +233,7 @@
 </head>
 <body class="pre">
   <div id="stage"></div>
+  <div class="ui">
 
   <header class="head">
     <div class="eyebrow">Официальное приглашение на день рождения</div>
@@ -235,7 +242,7 @@
   </header>
 
   <div class="gate" id="gate">
-    <button class="gate-on" id="gateOn" type="button"><span class="pi"><svg viewBox="0 0 10 10"><path d="M1.8 0.6v8.8l7.6-4.4z"/></svg></span>Открыть приглашение</button>
+    <button class="gate-on" id="gateOn" type="button">Открыть приглашение<span class="arr" aria-hidden="true">→</span></button>
   </div>
 
   <div class="ctrls">
@@ -323,6 +330,8 @@
 
     </div>
   </section>
+  </div>
+
   </div>
 
   <audio id="audio" preload="auto" loop>
